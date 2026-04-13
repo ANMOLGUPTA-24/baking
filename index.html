@@ -41,9 +41,17 @@
         <span class="hud-label">Score</span>
         <span class="hud-val" id="hud-score">0</span>
       </div>
+      <div class="hud-block">
+        <span class="hud-label">Round</span>
+        <span class="hud-val" id="hud-round">1</span>
+      </div>
       <div class="hud-block order-hud">
         <span class="hud-label">Order</span>
         <span class="hud-val" id="hud-order">—</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">Streak</span>
+        <span class="hud-val" id="hud-streak">—</span>
       </div>
       <div class="hud-block">
         <span class="hud-label">Lives</span>
@@ -134,6 +142,11 @@
 
   <!-- ── FEEDBACK POPUP ── -->
   <div id="feedback-pop" class="hidden"></div>
+
+  <!-- ── NEW ORDER OVERLAY ── -->
+  <div id="order-overlay" class="hidden">
+    <div id="order-overlay-text"></div>
+  </div>
 
   <script src="game.js"></script>
 </body>

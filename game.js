@@ -52,6 +52,8 @@ const RECIPES = [
 let state = {
   score:   0,
   lives:   3,
+  round:   1,
+  streak:  0,
   bowl:    [],     // ids of ingredients in bowl
   mixed:   false,
   baked:   false,
@@ -66,7 +68,7 @@ function showGame() {
   document.getElementById('screen-start').classList.remove('active');
   document.getElementById('screen-game').classList.add('active');
   buildIngredientShelf();
-  newOrder();
+  showOrderFlash(() => newOrder());
 }
 
 // ── INGREDIENT SHELF ────────────────────────────────
@@ -110,8 +112,14 @@ function newOrder() {
   state.baked = false;
   renderBowl();
 
-  // Pick a random recipe
-  state.recipe = RECIPES[Math.floor(Math.random() * RECIPES.length)];
+  // Reset oven
+  document.getElementById('oven-contents').textContent = '🕳️';
+
+  // Pick a random recipe (avoid repeating last)
+  let pick;
+  do { pick = RECIPES[Math.floor(Math.random() * RECIPES.length)]; }
+  while (RECIPES.length > 1 && pick === state.recipe);
+  state.recipe = pick;
 
   // Build ingredient shelf for this round (required + decoys, shuffled)
   const ids = shuffle([...state.recipe.required, ...state.recipe.decoys]);
@@ -139,10 +147,13 @@ function newOrder() {
 
   // HUD
   document.getElementById('hud-order').textContent = state.recipe.name;
+  document.getElementById('hud-round').textContent = state.round;
   updateLivesHUD();
+  updateStreakHUD();
 
-  // Timer
-  startTimer(60);
+  // Timer gets shorter every 3 rounds, floors at 20s
+  const timerSecs = Math.max(20, 60 - Math.floor((state.round - 1) / 3) * 5);
+  startTimer(timerSecs);
 }
 
 function updateTicket() {
@@ -263,8 +274,17 @@ function bakeIt() {
   const correct  = needed.filter(id => state.bowl.includes(id)).length;
   const pct      = correct / needed.length;
 
-  // Score
-  const earned = Math.round(pct * 100) + Math.floor(state.timerPct * 0.3);
+  // Streak
+  if (pct === 1) {
+    state.streak++;
+  } else {
+    state.streak = 0;
+  }
+  updateStreakHUD();
+
+  // Score (with streak multiplier)
+  const multiplier = 1 + Math.floor(state.streak / 3) * 0.5;
+  const earned = Math.round((Math.round(pct * 100) + Math.floor(state.timerPct * 0.3)) * multiplier);
   state.score += earned;
   document.getElementById('hud-score').textContent = state.score;
 
@@ -282,9 +302,13 @@ function bakeIt() {
       ? ["Umm... 😬", "That's... interesting 🤔", "The judges are concerned 😰"]
       : ["What IS that?! 💀", "DISASTER! 🔥", "Call the fire dept 🚒"];
 
-    showFeedback(msgs[Math.floor(Math.random() * msgs.length)], pct >= 0.6 ? '#6BCB77' : '#FF6B35');
+    const streakBonus = state.streak >= 3 ? ` (x${(1 + Math.floor(state.streak/3)*0.5).toFixed(1)} streak!)` : '';
+    showFeedback(msgs[Math.floor(Math.random() * msgs.length)] + streakBonus, pct >= 0.6 ? '#6BCB77' : '#FF6B35');
 
-    setTimeout(newOrder, 2000);
+    setTimeout(() => {
+      state.round++;
+      showOrderFlash(() => newOrder());
+    }, 1800);
   }, 1200);
 }
 
@@ -317,8 +341,15 @@ function updateTimerBar() {
 
 function onTimeUp() {
   showFeedback("TIME'S UP! ⏱️", '#FF6B9D');
+  state.streak = 0;
+  updateStreakHUD();
   loseLife();
-  setTimeout(newOrder, 1500);
+  if (state.lives > 0) {
+    setTimeout(() => {
+      state.round++;
+      showOrderFlash(() => newOrder());
+    }, 1500);
+  }
 }
 
 // ── LIVES ────────────────────────────────────────────
@@ -338,12 +369,58 @@ function gameOver() {
   clearInterval(state.timerInterval);
   showFeedback(`GAME OVER! Score: ${state.score} 💀`, '#FF6B35');
   setTimeout(() => {
-    if (confirm(`Game Over! Your score: ${state.score}\nPlay again?`)) {
-      state.score = 0; state.lives = 3;
+    if (confirm(`Game Over!\nRound: ${state.round} | Score: ${state.score}\nPlay again?`)) {
+      state.score = 0; state.lives = 3; state.round = 1; state.streak = 0;
       document.getElementById('hud-score').textContent = '0';
-      newOrder();
+      showOrderFlash(() => newOrder());
     }
   }, 1200);
+}
+
+// ── STREAK HUD ───────────────────────────────────────
+
+function updateStreakHUD() {
+  const el = document.getElementById('hud-streak');
+  if (state.streak === 0) {
+    el.textContent = '—';
+    el.style.color = '';
+  } else {
+    el.textContent = '🔥'.repeat(Math.min(state.streak, 5));
+    el.style.color = '#FF6B35';
+  }
+}
+
+// ── ORDER FLASH OVERLAY ──────────────────────────────
+
+function showOrderFlash(onDone) {
+  const overlay = document.getElementById('order-overlay');
+  const text    = document.getElementById('order-overlay-text');
+  const round   = state.round;
+
+  const quips = [
+    "New order incoming! 📋",
+    "Next bake — GO! 🚀",
+    "Judges are watching... 👀",
+    "Don't burn it! 🔥",
+    "Here we go again! 😤",
+  ];
+
+  text.innerHTML = `<span class="flash-round">Round ${round}</span><span class="flash-quip">${quips[(round - 1) % quips.length]}</span>`;
+
+  if (round > 1 && round % 3 === 1) {
+    text.innerHTML += `<span class="flash-warn">⚡ Timer shortened!</span>`;
+  }
+
+  overlay.classList.remove('hidden');
+  overlay.classList.add('show');
+
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      onDone();
+    }, 400);
+  }, 1400);
 }
 
 // ── FEEDBACK POPUP ───────────────────────────────────
