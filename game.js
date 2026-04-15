@@ -154,6 +154,9 @@ function newOrder() {
   // Timer gets shorter every 3 rounds, floors at 20s
   const timerSecs = Math.max(20, 60 - Math.floor((state.round - 1) / 3) * 5);
   startTimer(timerSecs);
+
+  // Start chaos event scheduler
+  scheduleChaos();
 }
 
 function updateTicket() {
@@ -268,6 +271,7 @@ function bakeIt() {
 
   state.baked = true;
   clearInterval(state.timerInterval);
+  stopChaos();
 
   // Check how many correct ingredients
   const needed   = state.recipe.required;
@@ -340,6 +344,7 @@ function updateTimerBar() {
 }
 
 function onTimeUp() {
+  stopChaos();
   showFeedback("TIME'S UP! ⏱️", '#FF6B9D');
   state.streak = 0;
   updateStreakHUD();
@@ -367,6 +372,7 @@ function updateLivesHUD() {
 
 function gameOver() {
   clearInterval(state.timerInterval);
+  stopChaos();
   showFeedback(`GAME OVER! Score: ${state.score} 💀`, '#FF6B35');
   setTimeout(() => {
     if (confirm(`Game Over!\nRound: ${state.round} | Score: ${state.score}\nPlay again?`)) {
@@ -439,6 +445,184 @@ function showFeedback(msg, color = '#FF6B35') {
     el.classList.remove('show');
     setTimeout(() => el.classList.add('hidden'), 200);
   }, 1200);
+}
+
+// ── CHAOS EVENTS ─────────────────────────────────────
+
+const CHAOS_POOL = [
+  { id: 'cat',     weight: 3 },
+  { id: 'flicker', weight: 3 },
+  { id: 'dropped', weight: 2 },
+  { id: 'hot',     weight: 2 },
+];
+
+let chaosTimeout   = null;
+let hotOvenActive  = false;
+let hotOvenTimer   = null;
+
+function scheduleChaos() {
+  clearTimeout(chaosTimeout);
+  // First event after 10-18s; shorter interval in later rounds
+  const base  = Math.max(8000, 18000 - state.round * 400);
+  const jitter = Math.random() * 4000;
+  chaosTimeout = setTimeout(triggerChaos, base + jitter);
+}
+
+function stopChaos() {
+  clearTimeout(chaosTimeout);
+  chaosTimeout = null;
+  cancelHotOven();
+  // Retract cat if visible
+  const cat = document.getElementById('chaos-cat');
+  cat.classList.remove('peeking');
+  setTimeout(() => cat.classList.add('hidden'), 1200);
+}
+
+function triggerChaos() {
+  if (state.baked || state.lives <= 0) return;
+
+  // Weighted random pick
+  const total = CHAOS_POOL.reduce((s, e) => s + e.weight, 0);
+  let r = Math.random() * total;
+  let chosen = CHAOS_POOL[0];
+  for (const e of CHAOS_POOL) { r -= e.weight; if (r <= 0) { chosen = e; break; } }
+
+  switch (chosen.id) {
+    case 'cat':     chaosCat();     break;
+    case 'flicker': chaosFlicker(); break;
+    case 'dropped': chaosDropped(); break;
+    case 'hot':     chaosHotOven(); break;
+  }
+
+  scheduleChaos(); // queue the next one
+}
+
+// ── CHAOS: CAT STEALS INGREDIENT ─────────────────────
+
+function chaosCat() {
+  if (state.bowl.length === 0) return; // nothing to steal
+
+  const cat = document.getElementById('chaos-cat');
+  cat.classList.remove('hidden');
+
+  // Slide in
+  requestAnimationFrame(() => cat.classList.add('peeking'));
+
+  showChaosBanner("A cat is stealing your ingredients! 🐱");
+
+  setTimeout(() => {
+    if (state.baked) { retractCat(); return; }
+
+    // Steal a random bowl ingredient
+    const idx       = Math.floor(Math.random() * state.bowl.length);
+    const stolenId  = state.bowl.splice(idx, 1)[0];
+    renderBowl();
+    updateTicket();
+
+    const ingEl = document.getElementById('ing-' + stolenId);
+    if (ingEl) ingEl.classList.remove('added');
+
+    const ing = INGREDIENTS.find(i => i.id === stolenId);
+    showChaosBanner(`Cat stole the ${ing?.name}! 😾`);
+
+    setTimeout(retractCat, 1200);
+  }, 900);
+}
+
+function retractCat() {
+  const cat = document.getElementById('chaos-cat');
+  cat.classList.remove('peeking');
+  setTimeout(() => cat.classList.add('hidden'), 1300);
+}
+
+// ── CHAOS: POWER FLICKER ──────────────────────────────
+
+function chaosFlicker() {
+  showChaosBanner("Power flicker! ⚡ Shelf scrambled!");
+
+  const overlay = document.getElementById('flicker-overlay');
+  overlay.classList.remove('hidden');
+  overlay.style.opacity = '0';
+
+  let tick = 0;
+  const flicker = setInterval(() => {
+    overlay.style.opacity = (tick % 2 === 0) ? '1' : '0';
+    tick++;
+    if (tick >= 7) {
+      clearInterval(flicker);
+      overlay.style.opacity = '0';
+      overlay.classList.add('hidden');
+      if (!state.baked) shuffleShelf();
+    }
+  }, 130);
+}
+
+function shuffleShelf() {
+  const container = document.getElementById('ingredients');
+  const children  = Array.from(container.children);
+  shuffle(children).forEach(el => container.appendChild(el));
+}
+
+// ── CHAOS: BUTTER FINGERS ────────────────────────────
+
+function chaosDropped() {
+  if (state.bowl.length === 0) return;
+
+  const idx      = Math.floor(Math.random() * state.bowl.length);
+  const droppedId = state.bowl.splice(idx, 1)[0];
+  renderBowl();
+  updateTicket();
+
+  const ingEl = document.getElementById('ing-' + droppedId);
+  if (ingEl) ingEl.classList.remove('added');
+
+  const ing = INGREDIENTS.find(i => i.id === droppedId);
+  showChaosBanner(`Butter fingers! ${ing?.icon} fell on the floor! 🙈`);
+}
+
+// ── CHAOS: OVEN OVERHEATING ───────────────────────────
+
+function chaosHotOven() {
+  if (hotOvenActive) return;
+  hotOvenActive = true;
+
+  document.getElementById('oven-body').classList.add('overheating');
+  showChaosBanner("Oven overheating! Click it to cool down! 🌡️");
+
+  hotOvenTimer = setTimeout(() => {
+    if (!hotOvenActive) return;
+    hotOvenActive = false;
+    document.getElementById('oven-body').classList.remove('overheating');
+    showChaosBanner("OVEN EXPLODED! 💥 Lost a life!");
+    document.getElementById('screen-game').classList.add('shaking');
+    setTimeout(() => document.getElementById('screen-game').classList.remove('shaking'), 400);
+    loseLife();
+  }, 5000);
+}
+
+function coolOven() {
+  if (!hotOvenActive) return;
+  hotOvenActive = false;
+  clearTimeout(hotOvenTimer);
+  document.getElementById('oven-body').classList.remove('overheating');
+  showChaosBanner("Phew! Oven cooled! 🧊");
+}
+
+function cancelHotOven() {
+  hotOvenActive = false;
+  clearTimeout(hotOvenTimer);
+  document.getElementById('oven-body').classList.remove('overheating');
+}
+
+// ── CHAOS BANNER ──────────────────────────────────────
+
+let chaosBannerTimeout;
+function showChaosBanner(msg) {
+  const el = document.getElementById('chaos-banner');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(chaosBannerTimeout);
+  chaosBannerTimeout = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
 // ── UTILS ────────────────────────────────────────────

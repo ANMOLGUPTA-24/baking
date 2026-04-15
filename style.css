@@ -635,6 +635,58 @@ body {
 ═══════════════════════════════════════ */
 .hidden { display: none !important; }
 
+/* ═══════════════════════════════════════
+   CHAOS — POWER FLICKER OVERLAY
+═══════════════════════════════════════ */
+#flicker-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 1500;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* ═══════════════════════════════════════
+   CHAOS — OVEN OVERHEATING
+═══════════════════════════════════════ */
+#oven-body.overheating {
+  cursor: pointer;
+  animation: overheat 0.4s infinite alternate;
+}
+
+@keyframes overheat {
+  from { box-shadow: 4px 4px 0 #333; }
+  to   { box-shadow: 4px 4px 0 #333, 0 0 22px 8px #ff4400, 0 0 8px 2px #ff9900 inset; }
+}
+
+/* ═══════════════════════════════════════
+   CHAOS — ANNOUNCEMENT BANNER
+═══════════════════════════════════════ */
+#chaos-banner {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(135deg, #c77dff, #ff6b9d);
+  color: #fff;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-size: 1.1rem;
+  font-weight: 900;
+  padding: 10px 24px;
+  border-radius: 50px;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+  z-index: 1600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+}
+#chaos-banner.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 
 
 
@@ -650,10 +702,6 @@ body {
 
 
 
-ghv jwrfv fnv fbfs
-
-
-fsfvnvrbnwrbk ::-webkit-validation-#; working on hrbvb tbrg logic
 
 
 
@@ -672,7 +720,6 @@ fsfvnvrbnwrbk ::-webkit-validation-#; working on hrbvb tbrg logic
 
 
 
-logic
 
 
 
@@ -683,12 +730,3 @@ logic
 
 
 
-
-
-
-
-
-
-
-
-anmol ffsvv s b;  #; working on hrbvb tbrg logic

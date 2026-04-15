@@ -81,7 +81,7 @@
 
       <!-- Oven (left side) -->
       <div id="oven">
-        <div id="oven-body">
+        <div id="oven-body" onclick="coolOven()">
           <div id="oven-glass">
             <span id="oven-contents">🕳️</span>
           </div>
@@ -147,6 +147,12 @@
   <div id="order-overlay" class="hidden">
     <div id="order-overlay-text"></div>
   </div>
+
+  <!-- ── CHAOS: POWER FLICKER OVERLAY ── -->
+  <div id="flicker-overlay" class="hidden"></div>
+
+  <!-- ── CHAOS: ANNOUNCEMENT BANNER ── -->
+  <div id="chaos-banner"></div>
 
   <script src="game.js"></script>
 </body>
