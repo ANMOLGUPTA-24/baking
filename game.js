@@ -309,10 +309,13 @@ function bakeIt() {
     const streakBonus = state.streak >= 3 ? ` (x${(1 + Math.floor(state.streak/3)*0.5).toFixed(1)} streak!)` : '';
     showFeedback(msgs[Math.floor(Math.random() * msgs.length)] + streakBonus, pct >= 0.6 ? '#6BCB77' : '#FF6B35');
 
+    showJudgeReactions(pct);
     setTimeout(() => {
-      state.round++;
-      showOrderFlash(() => newOrder());
-    }, 1800);
+      hideJudgePanel(() => {
+        state.round++;
+        showOrderFlash(() => newOrder());
+      });
+    }, 3200);
   }, 1200);
 }
 
@@ -373,6 +376,8 @@ function updateLivesHUD() {
 function gameOver() {
   clearInterval(state.timerInterval);
   stopChaos();
+  document.getElementById('judge-panel').classList.remove('show');
+  document.getElementById('judge-panel').classList.add('hidden');
   showFeedback(`GAME OVER! Score: ${state.score} 💀`, '#FF6B35');
   setTimeout(() => {
     if (confirm(`Game Over!\nRound: ${state.round} | Score: ${state.score}\nPlay again?`)) {
@@ -445,6 +450,83 @@ function showFeedback(msg, color = '#FF6B35') {
     el.classList.remove('show');
     setTimeout(() => el.classList.add('hidden'), 200);
   }, 1200);
+}
+
+// ── JUDGES ───────────────────────────────────────────
+
+const JUDGES = [
+  {
+    name: "Chef Gordon",
+    avatar: "👨‍🍳",
+    color: "#FF6B35",
+    lines: {
+      perfect:  ["FINALLY. A worthy bake. Don't get used to it.", "This is what I call COOKING. Write that down.", "Stunning. I almost feel emotion."],
+      good:     ["It's... edible. I suppose.", "Not terrible. That's a compliment from me.", "Could be worse. Could also be better."],
+      bad:      ["What IS this? A bake or a cry for help?", "My nan could do better. She's been dead 10 years.", "This is RAW. Emotionally. And possibly literally."],
+      disaster: ["Get out. GET OUT OF MY KITCHEN.", "I've seen prison food with more dignity.", "This is an absolute DISGRACE. I'm done."],
+    }
+  },
+  {
+    name: "Dame Margaret",
+    avatar: "👵",
+    color: "#C77DFF",
+    lines: {
+      perfect:  ["Oh how delightful! Almost as good as mine, dear.", "Wonderful! You may bake for me anytime.", "I'm genuinely impressed. Don't tell anyone I said that."],
+      good:     ["Not bad, though my cat has baked better. Bless.", "Quite decent! You're improving, slowly.", "A solid effort, dear. A very ordinary solid effort."],
+      bad:      ["Oh... oh dear. Well, you tried.", "I'm sure your mother would be proud. Bless your heart.", "Interesting choice of... everything."],
+      disaster: ["Oh you poor thing. Have you tried a different hobby?", "I cannot eat this. My dentures won't allow it.", "Even with cream this could not be saved, dear."],
+    }
+  },
+  {
+    name: "Foodie Raj",
+    avatar: "🧑‍🦱",
+    color: "#4D96FF",
+    lines: {
+      perfect:  ["I am CRYING actual tears. This is TRANSCENDENT.", "BRO. BRO. This hits different. 10/10.", "I need the recipe. I need it NOW."],
+      good:     ["Okay okay I SEE you! Solid work, not gonna lie.", "Lowkey amazing? Respect.", "Vibes immaculate. Taste solid. I fw it."],
+      bad:      ["Bruh... this hurts my soul a little ngl.", "I wanted to like it. I really did.", "The energy was there. The bake was... not."],
+      disaster: ["I cannot. I physically CANNOT. This broke me.", "This is a hate crime against pastry.", "My tastebuds filed a complaint. I'm processing."],
+    }
+  },
+];
+
+function showJudgeReactions(pct) {
+  const panel = document.getElementById('judge-panel');
+  panel.innerHTML = '';
+
+  const tier   = pct === 1 ? 'perfect' : pct >= 0.6 ? 'good' : pct >= 0.3 ? 'bad' : 'disaster';
+  const stars  = pct === 1 ? '⭐⭐⭐' : pct >= 0.6 ? '⭐⭐' : pct >= 0.3 ? '⭐' : '💀';
+
+  JUDGES.forEach((judge, i) => {
+    const lines = judge.lines[tier];
+    const line  = lines[Math.floor(Math.random() * lines.length)];
+
+    const card = document.createElement('div');
+    card.className = 'judge-card';
+    card.style.borderColor  = judge.color;
+    card.style.boxShadow    = `0 6px 0 ${judge.color}`;
+    card.style.animationDelay = `${i * 0.12}s`;
+    card.innerHTML = `
+      <div class="judge-avatar">${judge.avatar}</div>
+      <div class="judge-name" style="color:${judge.color}">${judge.name}</div>
+      <div class="judge-stars">${stars}</div>
+      <div class="judge-line">"${line}"</div>
+    `;
+    panel.appendChild(card);
+  });
+
+  panel.classList.remove('hidden');
+  void panel.offsetWidth;
+  panel.classList.add('show');
+}
+
+function hideJudgePanel(onDone) {
+  const panel = document.getElementById('judge-panel');
+  panel.classList.remove('show');
+  setTimeout(() => {
+    panel.classList.add('hidden');
+    onDone();
+  }, 500);
 }
 
 // ── CHAOS EVENTS ─────────────────────────────────────
