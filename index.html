@@ -54,6 +54,10 @@
         <span class="hud-val" id="hud-streak">—</span>
       </div>
       <div class="hud-block">
+        <span class="hud-label">Coins</span>
+        <span class="hud-val" id="hud-coins">🪙 0</span>
+      </div>
+      <div class="hud-block">
         <span class="hud-label">Lives</span>
         <span class="hud-val" id="hud-lives">❤️❤️❤️</span>
       </div>
@@ -157,5 +161,16 @@
   <!-- ── JUDGE PANEL ── -->
   <div id="judge-panel" class="hidden"></div>
 
+  <!-- ── UPGRADE SHOP ── -->
+  <div id="shop-overlay" class="hidden">
+    <div id="shop-modal">
+      <div id="shop-title">🪙 Upgrade Shop</div>
+      <div id="shop-subtitle"></div>
+      <div id="shop-grid"></div>
+      <button id="shop-skip" onclick="skipShop()">Skip →</button>
+    </div>
+  </div>
+
   <script src="game.js"></script>
 </body>
+</html>

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════
-//  BAKE & SURVIVE — game.js  (Day 1: UI + Ingredients)
+//  BAKE & SURVIVE — game.js
 // ═══════════════════════════════════════════════════
 
 // ── DATA ────────────────────────────────────────────
@@ -50,11 +50,15 @@ const RECIPES = [
 // ── STATE ───────────────────────────────────────────
 
 let state = {
-  score:   0,
-  lives:   3,
-  round:   1,
-  streak:  0,
-  bowl:    [],     // ids of ingredients in bowl
+  score:      0,
+  lives:      3,
+  round:      1,
+  streak:     0,
+  coins:      0,
+  shield:     false,   // blocks next chaos event
+  timerBoost: 0,       // rounds remaining with +10s timer
+  scoreBoost: false,   // 2x score on next bake
+  bowl:    [],
   mixed:   false,
   baked:   false,
   recipe:  null,
@@ -286,11 +290,17 @@ function bakeIt() {
   }
   updateStreakHUD();
 
-  // Score (with streak multiplier)
-  const multiplier = 1 + Math.floor(state.streak / 3) * 0.5;
+  // Score (with streak multiplier + scoreBoost)
+  const multiplier = (1 + Math.floor(state.streak / 3) * 0.5) * (state.scoreBoost ? 2 : 1);
+  state.scoreBoost = false;
   const earned = Math.round((Math.round(pct * 100) + Math.floor(state.timerPct * 0.3)) * multiplier);
   state.score += earned;
   document.getElementById('hud-score').textContent = state.score;
+
+  // Coins
+  const coinsEarned = pct === 1 ? 20 : pct >= 0.6 ? 12 : pct >= 0.3 ? 5 : 0;
+  state.coins += coinsEarned + (state.streak >= 3 ? 5 : 0);
+  updateCoinsHUD();
 
   // Oven animation
   document.getElementById('oven-contents').textContent = '🔥';
@@ -313,7 +323,11 @@ function bakeIt() {
     setTimeout(() => {
       hideJudgePanel(() => {
         state.round++;
-        showOrderFlash(() => newOrder());
+        if (state.round % 3 === 1) {
+          showShop(() => showOrderFlash(() => newOrder()));
+        } else {
+          showOrderFlash(() => newOrder());
+        }
       });
     }, 3200);
   }, 1200);
@@ -326,7 +340,10 @@ function startTimer(seconds) {
   state.timerPct = 100;
   updateTimerBar();
 
-  const step = 100 / (seconds * 2); // tick every 500ms
+  let secs = seconds;
+  if (state.timerBoost > 0) { secs += 10; state.timerBoost--; }
+
+  const step = 100 / (secs * 2); // tick every 500ms
   state.timerInterval = setInterval(() => {
     state.timerPct = Math.max(0, state.timerPct - step);
     updateTimerBar();
@@ -382,7 +399,9 @@ function gameOver() {
   setTimeout(() => {
     if (confirm(`Game Over!\nRound: ${state.round} | Score: ${state.score}\nPlay again?`)) {
       state.score = 0; state.lives = 3; state.round = 1; state.streak = 0;
+      state.coins = 0; state.shield = false; state.timerBoost = 0; state.scoreBoost = false;
       document.getElementById('hud-score').textContent = '0';
+      updateCoinsHUD();
       showOrderFlash(() => newOrder());
     }
   }, 1200);
@@ -563,6 +582,13 @@ function stopChaos() {
 function triggerChaos() {
   if (state.baked || state.lives <= 0) return;
 
+  if (state.shield) {
+    state.shield = false;
+    showChaosBanner("🛡️ Shield blocked the chaos!");
+    scheduleChaos();
+    return;
+  }
+
   // Weighted random pick
   const total = CHAOS_POOL.reduce((s, e) => s + e.weight, 0);
   let r = Math.random() * total;
@@ -705,6 +731,72 @@ function showChaosBanner(msg) {
   el.classList.add('show');
   clearTimeout(chaosBannerTimeout);
   chaosBannerTimeout = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── COINS HUD ────────────────────────────────────────
+
+function updateCoinsHUD() {
+  document.getElementById('hud-coins').textContent = '🪙 ' + state.coins;
+}
+
+// ── UPGRADE SHOP ─────────────────────────────────────
+
+const UPGRADES = [
+  { id: 'life',       icon: '❤️',  name: 'Extra Life',   cost: 50, desc: '+1 life (max 5)',        color: '#FF6B9D' },
+  { id: 'timer',      icon: '⏱️',  name: 'Timer Boost',  cost: 30, desc: '+10s for 3 rounds',      color: '#4D96FF' },
+  { id: 'shield',     icon: '🛡️',  name: 'Chaos Shield', cost: 40, desc: 'Block next chaos event', color: '#C77DFF' },
+  { id: 'scoreboost', icon: '💫',  name: 'Score Boost',  cost: 25, desc: '2× score next bake',     color: '#FFD93D' },
+];
+
+let shopCallback = null;
+
+function showShop(onDone) {
+  shopCallback = onDone;
+
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = '';
+
+  UPGRADES.forEach(upg => {
+    const canAfford = state.coins >= upg.cost;
+    const card = document.createElement('div');
+    card.className = 'shop-card' + (canAfford ? '' : ' cant-afford');
+    card.style.borderColor = upg.color;
+    card.style.boxShadow   = `0 6px 0 ${upg.color}`;
+    card.innerHTML = `
+      <div class="shop-icon">${upg.icon}</div>
+      <div class="shop-name" style="color:${upg.color}">${upg.name}</div>
+      <div class="shop-desc">${upg.desc}</div>
+      <div class="shop-cost">🪙 ${upg.cost}</div>
+    `;
+    if (canAfford) card.addEventListener('click', () => buyUpgrade(upg.id));
+    grid.appendChild(card);
+  });
+
+  document.getElementById('shop-subtitle').textContent = `You have 🪙 ${state.coins} coins`;
+  document.getElementById('shop-overlay').classList.remove('hidden');
+}
+
+function buyUpgrade(id) {
+  const upg = UPGRADES.find(u => u.id === id);
+  if (!upg || state.coins < upg.cost) return;
+
+  state.coins -= upg.cost;
+  updateCoinsHUD();
+
+  switch (id) {
+    case 'life':       state.lives = Math.min(5, state.lives + 1); updateLivesHUD(); break;
+    case 'timer':      state.timerBoost += 3; break;
+    case 'shield':     state.shield = true; break;
+    case 'scoreboost': state.scoreBoost = true; break;
+  }
+
+  showFeedback(`${upg.icon} ${upg.name}!`, upg.color);
+  skipShop();
+}
+
+function skipShop() {
+  document.getElementById('shop-overlay').classList.add('hidden');
+  if (shopCallback) { shopCallback(); shopCallback = null; }
 }
 
 // ── UTILS ────────────────────────────────────────────
