@@ -8,9 +8,7 @@
 </head>
 <body>
 
-  <!-- ═══════════════════════════════════
-       START SCREEN
-  ═══════════════════════════════════ -->
+  <!-- start screen -->
   <div id="screen-start" class="screen active">
     <div class="start-bg">
       <div class="floating-emojis">
@@ -30,12 +28,9 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════
-       GAME SCREEN
-  ═══════════════════════════════════ -->
+  <!-- game screen -->
   <div id="screen-game" class="screen">
 
-    <!-- TOP BAR -->
     <div id="top-bar">
       <div class="hud-block">
         <span class="hud-label">Score</span>
@@ -64,27 +59,22 @@
       <button id="mute-btn" onclick="toggleMute()" title="Mute / Unmute">🔊</button>
     </div>
 
-    <!-- TIMER BAR -->
     <div id="timer-track"><div id="timer-fill"></div></div>
 
-    <!-- ── KITCHEN SCENE ── -->
+    <!-- kitchen -->
     <div id="kitchen">
 
-      <!-- Background layers -->
       <div id="kitchen-wall"></div>
       <div id="kitchen-floor"></div>
 
-      <!-- Window -->
       <div id="window-decor">
         <div class="window-pane"></div>
         <div class="window-frame"></div>
         <span class="window-sun">☀️</span>
       </div>
 
-      <!-- Shelf on wall -->
       <div id="wall-shelf"></div>
 
-      <!-- Oven (left side) -->
       <div id="oven">
         <div id="oven-body" onclick="coolOven()">
           <div id="oven-glass">
@@ -98,29 +88,22 @@
         <div id="oven-label">OVEN</div>
       </div>
 
-      <!-- Counter (middle) -->
       <div id="counter">
         <div id="counter-top">
-
-          <!-- Mixing bowl -->
           <div id="bowl-wrap">
             <div id="bowl">
               <div id="bowl-contents"></div>
             </div>
             <div id="bowl-label">mixing bowl</div>
           </div>
-
-          <!-- Action buttons -->
           <div id="action-btns">
-            <button class="action-btn" id="btn-mix"  onclick="mixBowl()">Mix! 🥄</button>
+            <button class="action-btn" id="btn-mix" onclick="mixBowl()">Mix! 🥄</button>
             <button class="action-btn" id="btn-bake" onclick="bakeIt()">Bake! 🔥</button>
           </div>
-
         </div>
         <div id="counter-front"></div>
       </div>
 
-      <!-- Order ticket board -->
       <div id="ticket-board">
         <div id="ticket-pin">📌</div>
         <div id="ticket">
@@ -129,40 +112,29 @@
         </div>
       </div>
 
-      <!-- Chaos character (cat) — hidden until chaos event -->
       <div id="chaos-cat" class="hidden">🐱</div>
 
-    </div><!-- /kitchen -->
+    </div>
 
-    <!-- ── INGREDIENT SHELF ── -->
     <div id="shelf">
       <div id="shelf-label">🧂 Ingredient Shelf — click to add!</div>
       <div id="ingredients"></div>
     </div>
 
-  </div><!-- /screen-game -->
+  </div>
 
-  <!-- ── FLYING INGREDIENT (clone for animation) ── -->
   <div id="fly-clone" class="hidden"></div>
-
-  <!-- ── FEEDBACK POPUP ── -->
   <div id="feedback-pop" class="hidden"></div>
 
-  <!-- ── NEW ORDER OVERLAY ── -->
   <div id="order-overlay" class="hidden">
     <div id="order-overlay-text"></div>
   </div>
 
-  <!-- ── CHAOS: POWER FLICKER OVERLAY ── -->
   <div id="flicker-overlay" class="hidden"></div>
-
-  <!-- ── CHAOS: ANNOUNCEMENT BANNER ── -->
   <div id="chaos-banner"></div>
-
-  <!-- ── JUDGE PANEL ── -->
   <div id="judge-panel" class="hidden"></div>
 
-  <!-- ── UPGRADE SHOP ── -->
+  <!-- shop -->
   <div id="shop-overlay" class="hidden">
     <div id="shop-modal">
       <div id="shop-title">🪙 Upgrade Shop</div>

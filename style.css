@@ -1,21 +1,18 @@
-/* ═══════════════════════════════════════
-   RESET & BASE
-═══════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --yellow:  #FFD93D;
-  --orange:  #FF6B35;
-  --pink:    #FF6B9D;
-  --green:   #6BCB77;
-  --blue:    #4D96FF;
-  --purple:  #C77DFF;
-  --dark:    #2D1B00;
-  --cream:   #FFF8EC;
+  --yellow: #FFD93D;
+  --orange: #FF6B35;
+  --pink: #FF6B9D;
+  --green: #6BCB77;
+  --blue: #4D96FF;
+  --purple: #C77DFF;
+  --dark: #2D1B00;
+  --cream: #FFF8EC;
   --counter: #C8860A;
   --counter-top: #E8A020;
-  --wall:    #FFE0A3;
-  --floor:   #D4A373;
+  --wall: #FFE0A3;
+  --floor: #D4A373;
 }
 
 body {
@@ -30,9 +27,7 @@ body {
 .screen { display: none; width: 100vw; height: 100vh; }
 .screen.active { display: flex; }
 
-/* ═══════════════════════════════════════
-   START SCREEN
-═══════════════════════════════════════ */
+/* start screen */
 #screen-start { align-items: center; justify-content: center; }
 
 .start-bg {
@@ -139,15 +134,12 @@ body {
 .btn-start:hover  { transform: translateY(-3px); box-shadow: 0 9px 0 #c0392b, 0 12px 24px rgba(255,107,53,0.4); }
 .btn-start:active { transform: translateY(3px);  box-shadow: 0 2px 0 #c0392b; }
 
-/* ═══════════════════════════════════════
-   GAME SCREEN LAYOUT
-═══════════════════════════════════════ */
+/* game screen */
 #screen-game {
   flex-direction: column;
   background: #1a0a00;
 }
 
-/* TOP BAR */
 #top-bar {
   display: flex;
   justify-content: space-between;
@@ -182,7 +174,6 @@ body {
   font-weight: 900;
 }
 
-/* MUTE BUTTON */
 #mute-btn {
   background: transparent;
   border: 2px solid #555;
@@ -197,7 +188,6 @@ body {
 #mute-btn:hover  { border-color: var(--yellow); transform: scale(1.1); }
 #mute-btn:active { transform: scale(0.95); }
 
-/* TIMER BAR */
 #timer-track {
   height: 8px;
   background: #333;
@@ -211,9 +201,7 @@ body {
   border-radius: 0 4px 4px 0;
 }
 
-/* ═══════════════════════════════════════
-   KITCHEN SCENE
-═══════════════════════════════════════ */
+/* kitchen */
 #kitchen {
   flex: 1;
   position: relative;
@@ -256,7 +244,6 @@ body {
   );
 }
 
-/* WINDOW */
 #window-decor {
   position: absolute;
   top: 10%;
@@ -288,7 +275,6 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* WALL SHELF */
 #wall-shelf {
   position: absolute;
   top: 42%;
@@ -300,7 +286,6 @@ body {
   box-shadow: 0 4px 0 #5c3d1e;
 }
 
-/* OVEN */
 #oven {
   position: absolute;
   bottom: 28%;
@@ -345,7 +330,6 @@ body {
   letter-spacing: 2px;
 }
 
-/* COUNTER */
 #counter {
   position: absolute;
   bottom: 28%;
@@ -373,7 +357,6 @@ body {
   box-shadow: 0 6px 0 #5c3d1e;
 }
 
-/* BOWL */
 #bowl-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 #bowl {
   width: 80px; height: 55px;
@@ -407,7 +390,6 @@ body {
   opacity: 0.7;
 }
 
-/* ACTION BUTTONS */
 #action-btns { display: flex; flex-direction: column; gap: 8px; }
 .action-btn {
   background: var(--orange);
@@ -428,7 +410,6 @@ body {
 #btn-bake:hover  { box-shadow: 0 6px 0 #8B004D; }
 #btn-bake:active { box-shadow: 0 1px 0 #8B004D; }
 
-/* TICKET BOARD */
 #ticket-board {
   position: absolute;
   top: 8%;
@@ -468,7 +449,6 @@ body {
 #ticket-list li.done  { color: var(--green); text-decoration: line-through; opacity: 0.7; }
 #ticket-list li::before { content: "•"; color: var(--orange); font-weight: bold; }
 
-/* CHAOS CAT */
 #chaos-cat {
   position: absolute;
   bottom: 28%;
@@ -480,9 +460,7 @@ body {
 }
 #chaos-cat.peeking { left: 20px; }
 
-/* ═══════════════════════════════════════
-   INGREDIENT SHELF (bottom)
-═══════════════════════════════════════ */
+/* ingredient shelf */
 #shelf {
   background: #2D1B00;
   border-top: 4px solid var(--orange);
@@ -542,9 +520,6 @@ body {
   40%,80% { transform: translateX(6px); }
 }
 
-/* ═══════════════════════════════════════
-   FLYING INGREDIENT CLONE
-═══════════════════════════════════════ */
 #fly-clone {
   position: fixed;
   font-size: 1.6rem;
@@ -559,9 +534,6 @@ body {
               transform 0.45s;
 }
 
-/* ═══════════════════════════════════════
-   FEEDBACK POPUP
-═══════════════════════════════════════ */
 #feedback-pop {
   position: fixed;
   top: 50%;
@@ -586,9 +558,6 @@ body {
   transform: translate(-50%, -50%) scale(1);
 }
 
-/* ═══════════════════════════════════════
-   SCREEN SHAKE
-═══════════════════════════════════════ */
 @keyframes screenShake {
   0%,100% { transform: translate(0,0); }
   20%     { transform: translate(-5px, 3px); }
@@ -598,9 +567,6 @@ body {
 }
 .shaking { animation: screenShake 0.35s; }
 
-/* ═══════════════════════════════════════
-   NEW ORDER OVERLAY
-═══════════════════════════════════════ */
 #order-overlay {
   position: fixed;
   inset: 0;
@@ -645,14 +611,9 @@ body {
   animation: popIn 0.35s 0.2s both cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* ═══════════════════════════════════════
-   UTILITY
-═══════════════════════════════════════ */
 .hidden { display: none !important; }
 
-/* ═══════════════════════════════════════
-   JUDGE PANEL
-═══════════════════════════════════════ */
+/* judge panel */
 #judge-panel {
   position: fixed;
   bottom: 0;
@@ -702,9 +663,6 @@ body {
   line-height: 1.45;
 }
 
-/* ═══════════════════════════════════════
-   CHAOS — POWER FLICKER OVERLAY
-═══════════════════════════════════════ */
 #flicker-overlay {
   position: fixed;
   inset: 0;
@@ -714,9 +672,6 @@ body {
   opacity: 0;
 }
 
-/* ═══════════════════════════════════════
-   CHAOS — OVEN OVERHEATING
-═══════════════════════════════════════ */
 #oven-body.overheating {
   cursor: pointer;
   animation: overheat 0.4s infinite alternate;
@@ -727,9 +682,6 @@ body {
   to   { box-shadow: 4px 4px 0 #333, 0 0 22px 8px #ff4400, 0 0 8px 2px #ff9900 inset; }
 }
 
-/* ═══════════════════════════════════════
-   CHAOS — ANNOUNCEMENT BANNER
-═══════════════════════════════════════ */
 #chaos-banner {
   position: fixed;
   top: 70px;
@@ -755,9 +707,7 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
-/* ═══════════════════════════════════════
-   UPGRADE SHOP
-═══════════════════════════════════════ */
+/* shop */
 #shop-overlay {
   position: fixed;
   inset: 0;
@@ -815,9 +765,7 @@ body {
   transition: transform 0.15s, box-shadow 0.15s;
   text-align: center;
 }
-.shop-card:hover {
-  transform: translateY(-4px) scale(1.05);
-}
+.shop-card:hover { transform: translateY(-4px) scale(1.05); }
 .shop-card:active { transform: translateY(1px); }
 .shop-card.cant-afford {
   opacity: 0.38;
@@ -825,15 +773,15 @@ body {
   filter: grayscale(0.6);
 }
 
-.shop-icon   { font-size: 2rem; line-height: 1; margin-bottom: 4px; }
-.shop-name   {
+.shop-icon { font-size: 2rem; line-height: 1; margin-bottom: 4px; }
+.shop-name {
   font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
   font-size: 0.75rem;
   font-weight: 900;
   margin-bottom: 4px;
 }
-.shop-desc   { font-size: 0.65rem; color: #666; line-height: 1.4; margin-bottom: 6px; }
-.shop-cost   {
+.shop-desc { font-size: 0.65rem; color: #666; line-height: 1.4; margin-bottom: 6px; }
+.shop-cost {
   font-size: 0.8rem;
   font-weight: 900;
   color: var(--dark);
@@ -855,46 +803,3 @@ body {
   transition: color 0.15s, border-color 0.15s;
 }
 #shop-skip:hover { color: var(--orange); border-color: var(--orange); }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,72 +1,62 @@
-// ═══════════════════════════════════════════════════
-//  BAKE & SURVIVE — game.js
-// ═══════════════════════════════════════════════════
-
-// ── DATA ────────────────────────────────────────────
-
 const INGREDIENTS = [
-  { id: "flour",    icon: "🌾", name: "Flour"    },
-  { id: "butter",   icon: "🧈", name: "Butter"   },
-  { id: "sugar",    icon: "🍚", name: "Sugar"    },
-  { id: "eggs",     icon: "🥚", name: "Eggs"     },
-  { id: "milk",     icon: "🥛", name: "Milk"     },
-  { id: "choc",     icon: "🍫", name: "Choc"     },
-  { id: "bpowder",  icon: "🫙", name: "B.Powder" },
-  { id: "vanilla",  icon: "🌿", name: "Vanilla"  },
+  { id: "flour", icon: "🌾", name: "Flour" },
+  { id: "butter", icon: "🧈", name: "Butter" },
+  { id: "sugar", icon: "🍚", name: "Sugar" },
+  { id: "eggs", icon: "🥚", name: "Eggs" },
+  { id: "milk", icon: "🥛", name: "Milk" },
+  { id: "choc", icon: "🍫", name: "Choc" },
+  { id: "bpowder", icon: "🫙", name: "B.Powder" },
+  { id: "vanilla", icon: "🌿", name: "Vanilla" },
   { id: "cinnamon", icon: "🫚", name: "Cinnamon" },
-  { id: "strawb",   icon: "🍓", name: "Strawb."  },
-  { id: "salt",     icon: "🧂", name: "Salt"     },
-  { id: "yeast",    icon: "🟤", name: "Yeast"    },
+  { id: "strawb", icon: "🍓", name: "Strawb." },
+  { id: "salt", icon: "🧂", name: "Salt" },
+  { id: "yeast", icon: "🟤", name: "Yeast" },
 ];
 
 const RECIPES = [
   {
     name: "Victoria Sponge 🎂",
     required: ["flour","butter","sugar","eggs","bpowder"],
-    decoys:   ["salt","cinnamon","yeast"],
+    decoys: ["salt","cinnamon","yeast"],
   },
   {
     name: "Choc Lava Cake 🍫",
     required: ["choc","butter","eggs","sugar","flour"],
-    decoys:   ["milk","yeast","cinnamon"],
+    decoys: ["milk","yeast","cinnamon"],
   },
   {
     name: "Cinnamon Rolls 🥐",
     required: ["flour","yeast","milk","butter","cinnamon","sugar"],
-    decoys:   ["bpowder","choc","salt"],
+    decoys: ["bpowder","choc","salt"],
   },
   {
     name: "Strawberry Shortcake 🍓",
     required: ["flour","butter","sugar","strawb","milk"],
-    decoys:   ["yeast","choc","cinnamon"],
+    decoys: ["yeast","choc","cinnamon"],
   },
   {
     name: "Banana Bread 🍌",
     required: ["flour","sugar","eggs","butter","bpowder","vanilla"],
-    decoys:   ["choc","yeast","salt"],
+    decoys: ["choc","yeast","salt"],
   },
 ];
 
-// ── STATE ───────────────────────────────────────────
-
 let state = {
-  score:      0,
-  lives:      3,
-  round:      1,
-  streak:     0,
-  coins:      0,
-  shield:     false,   // blocks next chaos event
-  timerBoost: 0,       // rounds remaining with +10s timer
-  scoreBoost: false,   // 2x score on next bake
-  bowl:    [],
-  mixed:   false,
-  baked:   false,
-  recipe:  null,
+  score: 0,
+  lives: 3,
+  round: 1,
+  streak: 0,
+  coins: 0,
+  shield: false,
+  timerBoost: 0,
+  scoreBoost: false,
+  bowl: [],
+  mixed: false,
+  baked: false,
+  recipe: null,
   timerPct: 100,
   timerInterval: null,
 };
-
-// ── BOOT ────────────────────────────────────────────
 
 function showGame() {
   initAudio();
@@ -76,8 +66,6 @@ function showGame() {
   buildIngredientShelf();
   showOrderFlash(() => newOrder());
 }
-
-// ── INGREDIENT SHELF ────────────────────────────────
 
 function buildIngredientShelf() {
   const container = document.getElementById('ingredients');
@@ -109,25 +97,19 @@ function highlightNeeded() {
   });
 }
 
-// ── ORDER / RECIPE ───────────────────────────────────
-
 function newOrder() {
-  // Reset bowl & state
-  state.bowl  = [];
+  state.bowl = [];
   state.mixed = false;
   state.baked = false;
   renderBowl();
 
-  // Reset oven
   document.getElementById('oven-contents').textContent = '🕳️';
 
-  // Pick a random recipe (avoid repeating last)
   let pick;
   do { pick = RECIPES[Math.floor(Math.random() * RECIPES.length)]; }
   while (RECIPES.length > 1 && pick === state.recipe);
   state.recipe = pick;
 
-  // Build ingredient shelf for this round (required + decoys, shuffled)
   const ids = shuffle([...state.recipe.required, ...state.recipe.decoys]);
   const container = document.getElementById('ingredients');
   container.innerHTML = '';
@@ -142,26 +124,21 @@ function newOrder() {
     container.appendChild(el);
   });
 
-  // Ticket
   document.getElementById('ticket-title').textContent = state.recipe.name;
   const ul = document.getElementById('ticket-list');
-  ul.innerHTML = state.recipe.required
-    .map(id => {
-      const ing = INGREDIENTS.find(i => i.id === id);
-      return `<li id="tick-${id}">${ing?.icon} ${ing?.name}</li>`;
-    }).join('');
+  ul.innerHTML = state.recipe.required.map(id => {
+    const ing = INGREDIENTS.find(i => i.id === id);
+    return `<li id="tick-${id}">${ing?.icon} ${ing?.name}</li>`;
+  }).join('');
 
-  // HUD
   document.getElementById('hud-order').textContent = state.recipe.name;
   document.getElementById('hud-round').textContent = state.round;
   updateLivesHUD();
   updateStreakHUD();
 
-  // Timer gets shorter every 3 rounds, floors at 20s
+  // timer shrinks every 3 rounds, min 20s
   const timerSecs = Math.max(20, 60 - Math.floor((state.round - 1) / 3) * 5);
   startTimer(timerSecs);
-
-  // Start chaos event scheduler
   scheduleChaos();
   timerTickToggle = false;
 }
@@ -174,8 +151,6 @@ function updateTicket() {
   });
 }
 
-// ── INGREDIENT CLICK ─────────────────────────────────
-
 function clickIngredient(ing) {
   if (state.baked) return;
 
@@ -186,7 +161,6 @@ function clickIngredient(ing) {
   const alreadyIn = state.bowl.includes(ing.id);
 
   if (!isNeeded || alreadyIn) {
-    // Wrong ingredient
     el.classList.add('wrong');
     setTimeout(() => el.classList.remove('wrong'), 500);
     document.getElementById('screen-game').classList.add('shaking');
@@ -197,7 +171,6 @@ function clickIngredient(ing) {
     return;
   }
 
-  // Correct — animate fly to bowl
   flyToBowl(el, ing, () => {
     sfxPlop();
     state.bowl.push(ing.id);
@@ -213,24 +186,22 @@ function flyToBowl(el, ing, onDone) {
   clone.classList.remove('hidden');
   clone.classList.remove('flying');
 
-  // Start position (ingredient button center)
   const src = el.getBoundingClientRect();
-  clone.style.left    = (src.left + src.width/2 - 12) + 'px';
-  clone.style.top     = (src.top  + src.height/2 - 12) + 'px';
+  clone.style.left = (src.left + src.width/2 - 12) + 'px';
+  clone.style.top = (src.top + src.height/2 - 12) + 'px';
   clone.style.opacity = '1';
   clone.style.transform = 'scale(1)';
 
-  // Target position (bowl center)
   const bowl = document.getElementById('bowl').getBoundingClientRect();
   const tx = bowl.left + bowl.width/2 - 12;
-  const ty = bowl.top  + bowl.height/2 - 12;
+  const ty = bowl.top + bowl.height/2 - 12;
 
-  // Force reflow, then animate
+  // void forces a reflow so the transition actually plays
   void clone.offsetWidth;
   clone.classList.add('flying');
-  clone.style.left      = tx + 'px';
-  clone.style.top       = ty + 'px';
-  clone.style.opacity   = '0';
+  clone.style.left = tx + 'px';
+  clone.style.top = ty + 'px';
+  clone.style.opacity = '0';
   clone.style.transform = 'scale(0.3) rotate(360deg)';
 
   setTimeout(() => {
@@ -239,8 +210,6 @@ function flyToBowl(el, ing, onDone) {
     onDone();
   }, 460);
 }
-
-// ── BOWL ────────────────────────────────────────────
 
 function renderBowl() {
   const el = document.getElementById('bowl-contents');
@@ -254,8 +223,6 @@ function renderBowl() {
   }).join('');
 }
 
-// ── MIX ─────────────────────────────────────────────
-
 function mixBowl() {
   if (state.bowl.length === 0) {
     showFeedback("Bowl is empty! 😅", '#4D96FF');
@@ -263,14 +230,11 @@ function mixBowl() {
   }
   sfxMix();
   state.mixed = true;
-  // Visual bounce on bowl
   const bowl = document.getElementById('bowl');
   bowl.style.transform = 'scale(1.15)';
   setTimeout(() => bowl.style.transform = '', 200);
   showFeedback("Mixed! 🥄", '#FFD93D');
 }
-
-// ── BAKE ─────────────────────────────────────────────
 
 function bakeIt() {
   if (!state.mixed) {
@@ -284,12 +248,10 @@ function bakeIt() {
   clearInterval(state.timerInterval);
   stopChaos();
 
-  // Check how many correct ingredients
-  const needed   = state.recipe.required;
-  const correct  = needed.filter(id => state.bowl.includes(id)).length;
-  const pct      = correct / needed.length;
+  const needed = state.recipe.required;
+  const correct = needed.filter(id => state.bowl.includes(id)).length;
+  const pct = correct / needed.length;
 
-  // Streak
   if (pct === 1) {
     state.streak++;
   } else {
@@ -297,19 +259,16 @@ function bakeIt() {
   }
   updateStreakHUD();
 
-  // Score (with streak multiplier + scoreBoost)
   const multiplier = (1 + Math.floor(state.streak / 3) * 0.5) * (state.scoreBoost ? 2 : 1);
   state.scoreBoost = false;
   const earned = Math.round((Math.round(pct * 100) + Math.floor(state.timerPct * 0.3)) * multiplier);
   state.score += earned;
   document.getElementById('hud-score').textContent = state.score;
 
-  // Coins
   const coinsEarned = pct === 1 ? 20 : pct >= 0.6 ? 12 : pct >= 0.3 ? 5 : 0;
   state.coins += coinsEarned + (state.streak >= 3 ? 5 : 0);
   updateCoinsHUD();
 
-  // Oven animation
   document.getElementById('oven-contents').textContent = '🔥';
   setTimeout(() => {
     const resultEmoji = pct === 1 ? '🎂' : pct >= 0.6 ? '🍰' : pct >= 0.3 ? '🥴' : '💀';
@@ -345,8 +304,6 @@ function bakeIt() {
   }, 1200);
 }
 
-// ── TIMER ────────────────────────────────────────────
-
 function startTimer(seconds) {
   clearInterval(state.timerInterval);
   state.timerPct = 100;
@@ -355,7 +312,7 @@ function startTimer(seconds) {
   let secs = seconds;
   if (state.timerBoost > 0) { secs += 10; state.timerBoost--; }
 
-  const step = 100 / (secs * 2); // tick every 500ms
+  const step = 100 / (secs * 2);
   state.timerInterval = setInterval(() => {
     state.timerPct = Math.max(0, state.timerPct - step);
     updateTimerBar();
@@ -394,8 +351,6 @@ function onTimeUp() {
   }
 }
 
-// ── LIVES ────────────────────────────────────────────
-
 function loseLife() {
   sfxLoseLife();
   state.lives = Math.max(0, state.lives - 1);
@@ -416,6 +371,7 @@ function gameOver() {
   document.getElementById('judge-panel').classList.remove('show');
   document.getElementById('judge-panel').classList.add('hidden');
   showFeedback(`GAME OVER! Score: ${state.score} 💀`, '#FF6B35');
+  console.log('game over - score:', state.score, 'round:', state.round);
   setTimeout(() => {
     if (confirm(`Game Over!\nRound: ${state.round} | Score: ${state.score}\nPlay again?`)) {
       state.score = 0; state.lives = 3; state.round = 1; state.streak = 0;
@@ -428,8 +384,6 @@ function gameOver() {
   }, 1200);
 }
 
-// ── STREAK HUD ───────────────────────────────────────
-
 function updateStreakHUD() {
   const el = document.getElementById('hud-streak');
   if (state.streak === 0) {
@@ -441,12 +395,10 @@ function updateStreakHUD() {
   }
 }
 
-// ── ORDER FLASH OVERLAY ──────────────────────────────
-
 function showOrderFlash(onDone) {
   const overlay = document.getElementById('order-overlay');
-  const text    = document.getElementById('order-overlay-text');
-  const round   = state.round;
+  const text = document.getElementById('order-overlay-text');
+  const round = state.round;
 
   const quips = [
     "New order incoming! 📋",
@@ -475,8 +427,6 @@ function showOrderFlash(onDone) {
   }, 1400);
 }
 
-// ── FEEDBACK POPUP ───────────────────────────────────
-
 let feedbackTimeout;
 function showFeedback(msg, color = '#FF6B35') {
   const el = document.getElementById('feedback-pop');
@@ -493,17 +443,15 @@ function showFeedback(msg, color = '#FF6B35') {
   }, 1200);
 }
 
-// ── JUDGES ───────────────────────────────────────────
-
 const JUDGES = [
   {
     name: "Chef Gordon",
     avatar: "👨‍🍳",
     color: "#FF6B35",
     lines: {
-      perfect:  ["FINALLY. A worthy bake. Don't get used to it.", "This is what I call COOKING. Write that down.", "Stunning. I almost feel emotion."],
-      good:     ["It's... edible. I suppose.", "Not terrible. That's a compliment from me.", "Could be worse. Could also be better."],
-      bad:      ["What IS this? A bake or a cry for help?", "My nan could do better. She's been dead 10 years.", "This is RAW. Emotionally. And possibly literally."],
+      perfect: ["FINALLY. A worthy bake. Don't get used to it.", "This is what I call COOKING. Write that down.", "Stunning. I almost feel emotion."],
+      good: ["It's... edible. I suppose.", "Not terrible. That's a compliment from me.", "Could be worse. Could also be better."],
+      bad: ["What IS this? A bake or a cry for help?", "My nan could do better. She's been dead 10 years.", "This is RAW. Emotionally. And possibly literally."],
       disaster: ["Get out. GET OUT OF MY KITCHEN.", "I've seen prison food with more dignity.", "This is an absolute DISGRACE. I'm done."],
     }
   },
@@ -512,9 +460,9 @@ const JUDGES = [
     avatar: "👵",
     color: "#C77DFF",
     lines: {
-      perfect:  ["Oh how delightful! Almost as good as mine, dear.", "Wonderful! You may bake for me anytime.", "I'm genuinely impressed. Don't tell anyone I said that."],
-      good:     ["Not bad, though my cat has baked better. Bless.", "Quite decent! You're improving, slowly.", "A solid effort, dear. A very ordinary solid effort."],
-      bad:      ["Oh... oh dear. Well, you tried.", "I'm sure your mother would be proud. Bless your heart.", "Interesting choice of... everything."],
+      perfect: ["Oh how delightful! Almost as good as mine, dear.", "Wonderful! You may bake for me anytime.", "I'm genuinely impressed. Don't tell anyone I said that."],
+      good: ["Not bad, though my cat has baked better. Bless.", "Quite decent! You're improving, slowly.", "A solid effort, dear. A very ordinary solid effort."],
+      bad: ["Oh... oh dear. Well, you tried.", "I'm sure your mother would be proud. Bless your heart.", "Interesting choice of... everything."],
       disaster: ["Oh you poor thing. Have you tried a different hobby?", "I cannot eat this. My dentures won't allow it.", "Even with cream this could not be saved, dear."],
     }
   },
@@ -523,9 +471,9 @@ const JUDGES = [
     avatar: "🧑‍🦱",
     color: "#4D96FF",
     lines: {
-      perfect:  ["I am CRYING actual tears. This is TRANSCENDENT.", "BRO. BRO. This hits different. 10/10.", "I need the recipe. I need it NOW."],
-      good:     ["Okay okay I SEE you! Solid work, not gonna lie.", "Lowkey amazing? Respect.", "Vibes immaculate. Taste solid. I fw it."],
-      bad:      ["Bruh... this hurts my soul a little ngl.", "I wanted to like it. I really did.", "The energy was there. The bake was... not."],
+      perfect: ["I am CRYING actual tears. This is TRANSCENDENT.", "BRO. BRO. This hits different. 10/10.", "I need the recipe. I need it NOW."],
+      good: ["Okay okay I SEE you! Solid work, not gonna lie.", "Lowkey amazing? Respect.", "Vibes immaculate. Taste solid. I fw it."],
+      bad: ["Bruh... this hurts my soul a little ngl.", "I wanted to like it. I really did.", "The energy was there. The bake was... not."],
       disaster: ["I cannot. I physically CANNOT. This broke me.", "This is a hate crime against pastry.", "My tastebuds filed a complaint. I'm processing."],
     }
   },
@@ -535,17 +483,17 @@ function showJudgeReactions(pct) {
   const panel = document.getElementById('judge-panel');
   panel.innerHTML = '';
 
-  const tier   = pct === 1 ? 'perfect' : pct >= 0.6 ? 'good' : pct >= 0.3 ? 'bad' : 'disaster';
-  const stars  = pct === 1 ? '⭐⭐⭐' : pct >= 0.6 ? '⭐⭐' : pct >= 0.3 ? '⭐' : '💀';
+  const tier = pct === 1 ? 'perfect' : pct >= 0.6 ? 'good' : pct >= 0.3 ? 'bad' : 'disaster';
+  const stars = pct === 1 ? '⭐⭐⭐' : pct >= 0.6 ? '⭐⭐' : pct >= 0.3 ? '⭐' : '💀';
 
   JUDGES.forEach((judge, i) => {
     const lines = judge.lines[tier];
-    const line  = lines[Math.floor(Math.random() * lines.length)];
+    const line = lines[Math.floor(Math.random() * lines.length)];
 
     const card = document.createElement('div');
     card.className = 'judge-card';
-    card.style.borderColor  = judge.color;
-    card.style.boxShadow    = `0 6px 0 ${judge.color}`;
+    card.style.borderColor = judge.color;
+    card.style.boxShadow = `0 6px 0 ${judge.color}`;
     card.style.animationDelay = `${i * 0.12}s`;
     card.innerHTML = `
       <div class="judge-avatar">${judge.avatar}</div>
@@ -570,23 +518,20 @@ function hideJudgePanel(onDone) {
   }, 500);
 }
 
-// ── CHAOS EVENTS ─────────────────────────────────────
-
 const CHAOS_POOL = [
-  { id: 'cat',     weight: 3 },
+  { id: 'cat', weight: 3 },
   { id: 'flicker', weight: 3 },
   { id: 'dropped', weight: 2 },
-  { id: 'hot',     weight: 2 },
+  { id: 'hot', weight: 2 },
 ];
 
-let chaosTimeout   = null;
-let hotOvenActive  = false;
-let hotOvenTimer   = null;
+let chaosTimeout = null;
+let hotOvenActive = false;
+let hotOvenTimer = null;
 
 function scheduleChaos() {
   clearTimeout(chaosTimeout);
-  // First event after 10-18s; shorter interval in later rounds
-  const base  = Math.max(8000, 18000 - state.round * 400);
+  const base = Math.max(8000, 18000 - state.round * 400);
   const jitter = Math.random() * 4000;
   chaosTimeout = setTimeout(triggerChaos, base + jitter);
 }
@@ -595,7 +540,6 @@ function stopChaos() {
   clearTimeout(chaosTimeout);
   chaosTimeout = null;
   cancelHotOven();
-  // Retract cat if visible
   const cat = document.getElementById('chaos-cat');
   cat.classList.remove('peeking');
   setTimeout(() => cat.classList.add('hidden'), 1200);
@@ -613,41 +557,35 @@ function triggerChaos() {
 
   sfxChaosHit();
 
-  // Weighted random pick
+  // weighted random pick
   const total = CHAOS_POOL.reduce((s, e) => s + e.weight, 0);
   let r = Math.random() * total;
   let chosen = CHAOS_POOL[0];
   for (const e of CHAOS_POOL) { r -= e.weight; if (r <= 0) { chosen = e; break; } }
 
   switch (chosen.id) {
-    case 'cat':     chaosCat();     break;
+    case 'cat': chaosCat(); break;
     case 'flicker': chaosFlicker(); break;
     case 'dropped': chaosDropped(); break;
-    case 'hot':     chaosHotOven(); break;
+    case 'hot': chaosHotOven(); break;
   }
 
-  scheduleChaos(); // queue the next one
+  scheduleChaos();
 }
 
-// ── CHAOS: CAT STEALS INGREDIENT ─────────────────────
-
 function chaosCat() {
-  if (state.bowl.length === 0) return; // nothing to steal
+  if (state.bowl.length === 0) return;
 
   const cat = document.getElementById('chaos-cat');
   cat.classList.remove('hidden');
-
-  // Slide in
   requestAnimationFrame(() => cat.classList.add('peeking'));
-
   showChaosBanner("A cat is stealing your ingredients! 🐱");
 
   setTimeout(() => {
     if (state.baked) { retractCat(); return; }
 
-    // Steal a random bowl ingredient
-    const idx       = Math.floor(Math.random() * state.bowl.length);
-    const stolenId  = state.bowl.splice(idx, 1)[0];
+    const idx = Math.floor(Math.random() * state.bowl.length);
+    const stolenId = state.bowl.splice(idx, 1)[0];
     renderBowl();
     updateTicket();
 
@@ -656,7 +594,6 @@ function chaosCat() {
 
     const ing = INGREDIENTS.find(i => i.id === stolenId);
     showChaosBanner(`Cat stole the ${ing?.name}! 😾`);
-
     setTimeout(retractCat, 1200);
   }, 900);
 }
@@ -666,8 +603,6 @@ function retractCat() {
   cat.classList.remove('peeking');
   setTimeout(() => cat.classList.add('hidden'), 1300);
 }
-
-// ── CHAOS: POWER FLICKER ──────────────────────────────
 
 function chaosFlicker() {
   showChaosBanner("Power flicker! ⚡ Shelf scrambled!");
@@ -691,16 +626,14 @@ function chaosFlicker() {
 
 function shuffleShelf() {
   const container = document.getElementById('ingredients');
-  const children  = Array.from(container.children);
+  const children = Array.from(container.children);
   shuffle(children).forEach(el => container.appendChild(el));
 }
-
-// ── CHAOS: BUTTER FINGERS ────────────────────────────
 
 function chaosDropped() {
   if (state.bowl.length === 0) return;
 
-  const idx      = Math.floor(Math.random() * state.bowl.length);
+  const idx = Math.floor(Math.random() * state.bowl.length);
   const droppedId = state.bowl.splice(idx, 1)[0];
   renderBowl();
   updateTicket();
@@ -711,8 +644,6 @@ function chaosDropped() {
   const ing = INGREDIENTS.find(i => i.id === droppedId);
   showChaosBanner(`Butter fingers! ${ing?.icon} fell on the floor! 🙈`);
 }
-
-// ── CHAOS: OVEN OVERHEATING ───────────────────────────
 
 function chaosHotOven() {
   if (hotOvenActive) return;
@@ -746,8 +677,6 @@ function cancelHotOven() {
   document.getElementById('oven-body').classList.remove('overheating');
 }
 
-// ── CHAOS BANNER ──────────────────────────────────────
-
 let chaosBannerTimeout;
 function showChaosBanner(msg) {
   const el = document.getElementById('chaos-banner');
@@ -757,19 +686,15 @@ function showChaosBanner(msg) {
   chaosBannerTimeout = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// ── COINS HUD ────────────────────────────────────────
-
 function updateCoinsHUD() {
   document.getElementById('hud-coins').textContent = '🪙 ' + state.coins;
 }
 
-// ── UPGRADE SHOP ─────────────────────────────────────
-
 const UPGRADES = [
-  { id: 'life',       icon: '❤️',  name: 'Extra Life',   cost: 50, desc: '+1 life (max 5)',        color: '#FF6B9D' },
-  { id: 'timer',      icon: '⏱️',  name: 'Timer Boost',  cost: 30, desc: '+10s for 3 rounds',      color: '#4D96FF' },
-  { id: 'shield',     icon: '🛡️',  name: 'Chaos Shield', cost: 40, desc: 'Block next chaos event', color: '#C77DFF' },
-  { id: 'scoreboost', icon: '💫',  name: 'Score Boost',  cost: 25, desc: '2× score next bake',     color: '#FFD93D' },
+  { id: 'life', icon: '❤️', name: 'Extra Life', cost: 50, desc: '+1 life (max 5)', color: '#FF6B9D' },
+  { id: 'timer', icon: '⏱️', name: 'Timer Boost', cost: 30, desc: '+10s for 3 rounds', color: '#4D96FF' },
+  { id: 'shield', icon: '🛡️', name: 'Chaos Shield', cost: 40, desc: 'Block next chaos event', color: '#C77DFF' },
+  { id: 'scoreboost', icon: '💫', name: 'Score Boost', cost: 25, desc: '2× score next bake', color: '#FFD93D' },
 ];
 
 let shopCallback = null;
@@ -786,7 +711,7 @@ function showShop(onDone) {
     const card = document.createElement('div');
     card.className = 'shop-card' + (canAfford ? '' : ' cant-afford');
     card.style.borderColor = upg.color;
-    card.style.boxShadow   = `0 6px 0 ${upg.color}`;
+    card.style.boxShadow = `0 6px 0 ${upg.color}`;
     card.innerHTML = `
       <div class="shop-icon">${upg.icon}</div>
       <div class="shop-name" style="color:${upg.color}">${upg.name}</div>
@@ -810,9 +735,9 @@ function buyUpgrade(id) {
   updateCoinsHUD();
 
   switch (id) {
-    case 'life':       state.lives = Math.min(5, state.lives + 1); updateLivesHUD(); break;
-    case 'timer':      state.timerBoost += 3; break;
-    case 'shield':     state.shield = true; break;
+    case 'life': state.lives = Math.min(5, state.lives + 1); updateLivesHUD(); break;
+    case 'timer': state.timerBoost += 3; break;
+    case 'shield': state.shield = true; break;
     case 'scoreboost': state.scoreBoost = true; break;
   }
 
@@ -825,25 +750,23 @@ function skipShop() {
   if (shopCallback) { shopCallback(); shopCallback = null; }
 }
 
-// ── AUDIO ENGINE ─────────────────────────────────────
+// audio stuff
 
-let audioCtx    = null;
-let sfxGain     = null;
-let bgmGain     = null;
+let audioCtx = null;
+let sfxGain = null;
+let bgmGain = null;
 let bgmInterval = null;
-let isMuted     = false;
+let isMuted = false;
 let timerTickToggle = false;
 
-// BGM: upbeat kitchen melody, G-major feel, 130 BPM
-const BGM_BPM  = 130;
-const BGM_BEAT = (60 / BGM_BPM) * 1000; // ms per beat
+const BGM_BPM = 130;
+const BGM_BEAT = (60 / BGM_BPM) * 1000;
 
-// [frequency_hz, duration_in_beats]  (0 = rest)
 const BGM_MEL = [
-  [392,1],[523,1],[659,2], [587,1],[523,1],[440,2],
-  [523,1],[587,1],[659,2], [0,1],[440,1],[523,3],
-  [659,1],[784,1],[880,2], [784,1],[659,1],[587,2],
-  [523,1],[659,1],[784,2], [0,1],[587,1],[523,3],
+  [392,1],[523,1],[659,2],[587,1],[523,1],[440,2],
+  [523,1],[587,1],[659,2],[0,1],[440,1],[523,3],
+  [659,1],[784,1],[880,2],[784,1],[659,1],[587,2],
+  [523,1],[659,1],[784,2],[0,1],[587,1],[523,3],
 ];
 const BGM_BASS = [131, 175, 196, 131, 131, 175, 196, 247];
 
@@ -852,8 +775,8 @@ let bgmBeat = 0, bgmMelIdx = 0, bgmBassIdx = 0, bgmMelLeft = 0;
 function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  sfxGain  = audioCtx.createGain(); sfxGain.gain.value = 0.55; sfxGain.connect(audioCtx.destination);
-  bgmGain  = audioCtx.createGain(); bgmGain.gain.value = 0.16; bgmGain.connect(audioCtx.destination);
+  sfxGain = audioCtx.createGain(); sfxGain.gain.value = 0.55; sfxGain.connect(audioCtx.destination);
+  bgmGain = audioCtx.createGain(); bgmGain.gain.value = 0.16; bgmGain.connect(audioCtx.destination);
 }
 
 function toggleMute() {
@@ -865,12 +788,10 @@ function toggleMute() {
   document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊';
 }
 
-// ── PRIMITIVE SOUND HELPERS ───────────────────────────
-
 function _tone(freq, dur, vol, type, dest) {
   if (!audioCtx || isMuted) return;
   const osc = audioCtx.createOscillator();
-  const g   = audioCtx.createGain();
+  const g = audioCtx.createGain();
   osc.type = type || 'sine';
   osc.frequency.value = freq;
   g.gain.setValueAtTime(vol, audioCtx.currentTime);
@@ -882,7 +803,7 @@ function _tone(freq, dur, vol, type, dest) {
 function _sweep(f1, f2, dur, vol, type) {
   if (!audioCtx || isMuted) return;
   const osc = audioCtx.createOscillator();
-  const g   = audioCtx.createGain();
+  const g = audioCtx.createGain();
   osc.type = type || 'sine';
   osc.frequency.setValueAtTime(f1, audioCtx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(f2, audioCtx.currentTime + dur);
@@ -894,44 +815,40 @@ function _sweep(f1, f2, dur, vol, type) {
 
 function _noise(dur, vol, filterF, dest) {
   if (!audioCtx || isMuted) return;
-  const len  = Math.ceil(audioCtx.sampleRate * dur);
-  const buf  = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const len = Math.ceil(audioCtx.sampleRate * dur);
+  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
   const data = buf.getChannelData(0);
   for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
-  const src  = audioCtx.createBufferSource();
+  const src = audioCtx.createBufferSource();
   src.buffer = buf;
-  const flt  = audioCtx.createBiquadFilter();
-  flt.type   = 'bandpass'; flt.frequency.value = filterF || 1000;
-  const g    = audioCtx.createGain();
+  const flt = audioCtx.createBiquadFilter();
+  flt.type = 'bandpass'; flt.frequency.value = filterF || 1000;
+  const g = audioCtx.createGain();
   g.gain.setValueAtTime(vol, audioCtx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
   src.connect(flt); flt.connect(g); g.connect(dest || sfxGain);
   src.start();
 }
 
-// ── SFX LIBRARY ───────────────────────────────────────
-
-function sfxPlop()       { _tone(620, 0.06, 0.55); _tone(310, 0.1, 0.3); }
-function sfxWrong()      { _sweep(280, 155, 0.25, 0.6, 'sawtooth'); _noise(0.1, 0.2, 400); }
-function sfxMix()        { _sweep(280, 950, 0.28, 0.45, 'sine'); _noise(0.18, 0.2, 1500); }
-function sfxBakeStart()  { _noise(0.35, 0.5, 180); setTimeout(() => _noise(0.55, 0.28, 3500), 220); }
-function sfxPerfect()    {
+function sfxPlop() { _tone(620, 0.06, 0.55); _tone(310, 0.1, 0.3); }
+function sfxWrong() { _sweep(280, 155, 0.25, 0.6, 'sawtooth'); _noise(0.1, 0.2, 400); }
+function sfxMix() { _sweep(280, 950, 0.28, 0.45, 'sine'); _noise(0.18, 0.2, 1500); }
+function sfxBakeStart() { _noise(0.35, 0.5, 180); setTimeout(() => _noise(0.55, 0.28, 3500), 220); }
+function sfxPerfect() {
   [523,659,784,1047].forEach((f,i) => setTimeout(() => _tone(f, 0.22, 0.45), i * 80));
   setTimeout(() => { _tone(1047, 0.55, 0.4); _tone(784, 0.55, 0.3); }, 360);
 }
-function sfxGood()       { _tone(523, 0.11, 0.4); setTimeout(() => _tone(659, 0.2, 0.4), 110); }
-function sfxBad()        { _sweep(360, 215, 0.38, 0.42, 'triangle'); }
-function sfxDisaster()   { _sweep(450, 135, 0.75, 0.55, 'sawtooth'); _noise(0.35, 0.3, 280); }
-function sfxTimerTick()  { _tone(1100, 0.04, 0.28, 'square'); }
-function sfxTimeUp()     { [880,440,880,440].forEach((f,i) => setTimeout(() => _tone(f, 0.12, 0.42, 'square'), i*100)); }
-function sfxChaosHit()   { _tone(440, 0.07, 0.5, 'sawtooth'); _tone(466, 0.07, 0.4, 'sawtooth'); _noise(0.12, 0.4, 700); }
-function sfxLoseLife()   { _sweep(300, 95, 0.42, 0.55, 'sine'); _noise(0.22, 0.3, 140); }
-function sfxGameOver()   { [523,494,440,392,349,294,262].forEach((f,i) => setTimeout(() => _tone(f, 0.35, 0.52, 'sawtooth'), i*130)); }
-function sfxCoin()       { _tone(1047, 0.07, 0.45); setTimeout(() => _tone(1319, 0.13, 0.4), 60); }
-function sfxShopOpen()   { _tone(1319, 0.08, 0.42); setTimeout(() => _tone(1047, 0.13, 0.36), 70); _noise(0.08, 0.18, 5500); }
-function sfxRound()      { _tone(440, 0.07, 0.3); setTimeout(() => _tone(554, 0.07, 0.3), 60); setTimeout(() => _tone(659, 0.14, 0.36), 120); }
-
-// ── BACKGROUND MUSIC ─────────────────────────────────
+function sfxGood() { _tone(523, 0.11, 0.4); setTimeout(() => _tone(659, 0.2, 0.4), 110); }
+function sfxBad() { _sweep(360, 215, 0.38, 0.42, 'triangle'); }
+function sfxDisaster() { _sweep(450, 135, 0.75, 0.55, 'sawtooth'); _noise(0.35, 0.3, 280); }
+function sfxTimerTick() { _tone(1100, 0.04, 0.28, 'square'); }
+function sfxTimeUp() { [880,440,880,440].forEach((f,i) => setTimeout(() => _tone(f, 0.12, 0.42, 'square'), i*100)); }
+function sfxChaosHit() { _tone(440, 0.07, 0.5, 'sawtooth'); _tone(466, 0.07, 0.4, 'sawtooth'); _noise(0.12, 0.4, 700); }
+function sfxLoseLife() { _sweep(300, 95, 0.42, 0.55, 'sine'); _noise(0.22, 0.3, 140); }
+function sfxGameOver() { [523,494,440,392,349,294,262].forEach((f,i) => setTimeout(() => _tone(f, 0.35, 0.52, 'sawtooth'), i*130)); }
+function sfxCoin() { _tone(1047, 0.07, 0.45); setTimeout(() => _tone(1319, 0.13, 0.4), 60); }
+function sfxShopOpen() { _tone(1319, 0.08, 0.42); setTimeout(() => _tone(1047, 0.13, 0.36), 70); _noise(0.08, 0.18, 5500); }
+function sfxRound() { _tone(440, 0.07, 0.3); setTimeout(() => _tone(554, 0.07, 0.3), 60); setTimeout(() => _tone(659, 0.14, 0.36), 120); }
 
 function startBGM() {
   if (bgmInterval) return;
@@ -949,7 +866,6 @@ function bgmTick() {
   if (!audioCtx || isMuted) return;
   const beatSec = BGM_BEAT / 1000;
 
-  // Melody — play next note when current one expires
   if (bgmMelLeft <= 0) {
     const [f, d] = BGM_MEL[bgmMelIdx % BGM_MEL.length];
     bgmMelLeft = d;
@@ -958,28 +874,22 @@ function bgmTick() {
   }
   bgmMelLeft--;
 
-  // Bass every 4 beats
   if (bgmBeat % 4 === 0) {
     _tone(BGM_BASS[(bgmBassIdx++) % BGM_BASS.length], beatSec * 3.8, 0.38, 'triangle', bgmGain);
   }
 
-  // Kick: beats 0 and 4 of every 8
   if (bgmBeat % 8 === 0 || bgmBeat % 8 === 4) {
     _sweep(190, 55, 0.1, 0.4, 'sine'); _noise(0.09, 0.35, 75, bgmGain);
   }
 
-  // Snare: beats 2 and 6
   if (bgmBeat % 8 === 2 || bgmBeat % 8 === 6) {
     _noise(0.09, 0.2, 2200, bgmGain);
   }
 
-  // Hi-hat: every odd beat
   if (bgmBeat % 2 === 1) _noise(0.04, 0.09, 10000, bgmGain);
 
   bgmBeat++;
 }
-
-// ── UTILS ────────────────────────────────────────────
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
