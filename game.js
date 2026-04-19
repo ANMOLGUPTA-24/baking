@@ -69,6 +69,8 @@ let state = {
 // ── BOOT ────────────────────────────────────────────
 
 function showGame() {
+  initAudio();
+  startBGM();
   document.getElementById('screen-start').classList.remove('active');
   document.getElementById('screen-game').classList.add('active');
   buildIngredientShelf();
@@ -161,6 +163,7 @@ function newOrder() {
 
   // Start chaos event scheduler
   scheduleChaos();
+  timerTickToggle = false;
 }
 
 function updateTicket() {
@@ -188,6 +191,7 @@ function clickIngredient(ing) {
     setTimeout(() => el.classList.remove('wrong'), 500);
     document.getElementById('screen-game').classList.add('shaking');
     setTimeout(() => document.getElementById('screen-game').classList.remove('shaking'), 400);
+    sfxWrong();
     loseLife();
     showFeedback(["Eww, really? 🤢", "Nope! ❌", "That's NOT it 😬", "Wrong ingredient! 🙃"][Math.floor(Math.random()*4)], '#FF6B9D');
     return;
@@ -195,6 +199,7 @@ function clickIngredient(ing) {
 
   // Correct — animate fly to bowl
   flyToBowl(el, ing, () => {
+    sfxPlop();
     state.bowl.push(ing.id);
     el.classList.add('added');
     renderBowl();
@@ -256,6 +261,7 @@ function mixBowl() {
     showFeedback("Bowl is empty! 😅", '#4D96FF');
     return;
   }
+  sfxMix();
   state.mixed = true;
   // Visual bounce on bowl
   const bowl = document.getElementById('bowl');
@@ -273,6 +279,7 @@ function bakeIt() {
   }
   if (state.baked) return;
 
+  sfxBakeStart();
   state.baked = true;
   clearInterval(state.timerInterval);
   stopChaos();
@@ -315,6 +322,11 @@ function bakeIt() {
       : pct >= 0.3
       ? ["Umm... 😬", "That's... interesting 🤔", "The judges are concerned 😰"]
       : ["What IS that?! 💀", "DISASTER! 🔥", "Call the fire dept 🚒"];
+
+    if (pct === 1) sfxPerfect();
+    else if (pct >= 0.6) sfxGood();
+    else if (pct >= 0.3) sfxBad();
+    else sfxDisaster();
 
     const streakBonus = state.streak >= 3 ? ` (x${(1 + Math.floor(state.streak/3)*0.5).toFixed(1)} streak!)` : '';
     showFeedback(msgs[Math.floor(Math.random() * msgs.length)] + streakBonus, pct >= 0.6 ? '#6BCB77' : '#FF6B35');
@@ -361,9 +373,14 @@ function updateTimerBar() {
     state.timerPct > 50 ? 'linear-gradient(90deg,#6BCB77,#FFD93D)' :
     state.timerPct > 25 ? 'linear-gradient(90deg,#FFD93D,#FF6B35)' :
                           'linear-gradient(90deg,#FF6B35,#FF6B9D)';
+  if (state.timerPct < 25 && !state.baked) {
+    timerTickToggle = !timerTickToggle;
+    if (timerTickToggle) sfxTimerTick();
+  }
 }
 
 function onTimeUp() {
+  sfxTimeUp();
   stopChaos();
   showFeedback("TIME'S UP! ⏱️", '#FF6B9D');
   state.streak = 0;
@@ -380,6 +397,7 @@ function onTimeUp() {
 // ── LIVES ────────────────────────────────────────────
 
 function loseLife() {
+  sfxLoseLife();
   state.lives = Math.max(0, state.lives - 1);
   updateLivesHUD();
   if (state.lives === 0) gameOver();
@@ -391,6 +409,8 @@ function updateLivesHUD() {
 }
 
 function gameOver() {
+  sfxGameOver();
+  stopBGM();
   clearInterval(state.timerInterval);
   stopChaos();
   document.getElementById('judge-panel').classList.remove('show');
@@ -402,6 +422,7 @@ function gameOver() {
       state.coins = 0; state.shield = false; state.timerBoost = 0; state.scoreBoost = false;
       document.getElementById('hud-score').textContent = '0';
       updateCoinsHUD();
+      startBGM();
       showOrderFlash(() => newOrder());
     }
   }, 1200);
@@ -441,6 +462,7 @@ function showOrderFlash(onDone) {
     text.innerHTML += `<span class="flash-warn">⚡ Timer shortened!</span>`;
   }
 
+  sfxRound();
   overlay.classList.remove('hidden');
   overlay.classList.add('show');
 
@@ -588,6 +610,8 @@ function triggerChaos() {
     scheduleChaos();
     return;
   }
+
+  sfxChaosHit();
 
   // Weighted random pick
   const total = CHAOS_POOL.reduce((s, e) => s + e.weight, 0);
@@ -751,6 +775,7 @@ const UPGRADES = [
 let shopCallback = null;
 
 function showShop(onDone) {
+  sfxShopOpen();
   shopCallback = onDone;
 
   const grid = document.getElementById('shop-grid');
@@ -780,6 +805,7 @@ function buyUpgrade(id) {
   const upg = UPGRADES.find(u => u.id === id);
   if (!upg || state.coins < upg.cost) return;
 
+  sfxCoin();
   state.coins -= upg.cost;
   updateCoinsHUD();
 
@@ -797,6 +823,160 @@ function buyUpgrade(id) {
 function skipShop() {
   document.getElementById('shop-overlay').classList.add('hidden');
   if (shopCallback) { shopCallback(); shopCallback = null; }
+}
+
+// ── AUDIO ENGINE ─────────────────────────────────────
+
+let audioCtx    = null;
+let sfxGain     = null;
+let bgmGain     = null;
+let bgmInterval = null;
+let isMuted     = false;
+let timerTickToggle = false;
+
+// BGM: upbeat kitchen melody, G-major feel, 130 BPM
+const BGM_BPM  = 130;
+const BGM_BEAT = (60 / BGM_BPM) * 1000; // ms per beat
+
+// [frequency_hz, duration_in_beats]  (0 = rest)
+const BGM_MEL = [
+  [392,1],[523,1],[659,2], [587,1],[523,1],[440,2],
+  [523,1],[587,1],[659,2], [0,1],[440,1],[523,3],
+  [659,1],[784,1],[880,2], [784,1],[659,1],[587,2],
+  [523,1],[659,1],[784,2], [0,1],[587,1],[523,3],
+];
+const BGM_BASS = [131, 175, 196, 131, 131, 175, 196, 247];
+
+let bgmBeat = 0, bgmMelIdx = 0, bgmBassIdx = 0, bgmMelLeft = 0;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  sfxGain  = audioCtx.createGain(); sfxGain.gain.value = 0.55; sfxGain.connect(audioCtx.destination);
+  bgmGain  = audioCtx.createGain(); bgmGain.gain.value = 0.16; bgmGain.connect(audioCtx.destination);
+}
+
+function toggleMute() {
+  isMuted = !isMuted;
+  if (audioCtx) {
+    sfxGain.gain.value = isMuted ? 0 : 0.55;
+    bgmGain.gain.value = isMuted ? 0 : 0.16;
+  }
+  document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊';
+}
+
+// ── PRIMITIVE SOUND HELPERS ───────────────────────────
+
+function _tone(freq, dur, vol, type, dest) {
+  if (!audioCtx || isMuted) return;
+  const osc = audioCtx.createOscillator();
+  const g   = audioCtx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  osc.connect(g); g.connect(dest || sfxGain);
+  osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+function _sweep(f1, f2, dur, vol, type) {
+  if (!audioCtx || isMuted) return;
+  const osc = audioCtx.createOscillator();
+  const g   = audioCtx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(f1, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(f2, audioCtx.currentTime + dur);
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  osc.connect(g); g.connect(sfxGain);
+  osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+function _noise(dur, vol, filterF, dest) {
+  if (!audioCtx || isMuted) return;
+  const len  = Math.ceil(audioCtx.sampleRate * dur);
+  const buf  = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  const src  = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const flt  = audioCtx.createBiquadFilter();
+  flt.type   = 'bandpass'; flt.frequency.value = filterF || 1000;
+  const g    = audioCtx.createGain();
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  src.connect(flt); flt.connect(g); g.connect(dest || sfxGain);
+  src.start();
+}
+
+// ── SFX LIBRARY ───────────────────────────────────────
+
+function sfxPlop()       { _tone(620, 0.06, 0.55); _tone(310, 0.1, 0.3); }
+function sfxWrong()      { _sweep(280, 155, 0.25, 0.6, 'sawtooth'); _noise(0.1, 0.2, 400); }
+function sfxMix()        { _sweep(280, 950, 0.28, 0.45, 'sine'); _noise(0.18, 0.2, 1500); }
+function sfxBakeStart()  { _noise(0.35, 0.5, 180); setTimeout(() => _noise(0.55, 0.28, 3500), 220); }
+function sfxPerfect()    {
+  [523,659,784,1047].forEach((f,i) => setTimeout(() => _tone(f, 0.22, 0.45), i * 80));
+  setTimeout(() => { _tone(1047, 0.55, 0.4); _tone(784, 0.55, 0.3); }, 360);
+}
+function sfxGood()       { _tone(523, 0.11, 0.4); setTimeout(() => _tone(659, 0.2, 0.4), 110); }
+function sfxBad()        { _sweep(360, 215, 0.38, 0.42, 'triangle'); }
+function sfxDisaster()   { _sweep(450, 135, 0.75, 0.55, 'sawtooth'); _noise(0.35, 0.3, 280); }
+function sfxTimerTick()  { _tone(1100, 0.04, 0.28, 'square'); }
+function sfxTimeUp()     { [880,440,880,440].forEach((f,i) => setTimeout(() => _tone(f, 0.12, 0.42, 'square'), i*100)); }
+function sfxChaosHit()   { _tone(440, 0.07, 0.5, 'sawtooth'); _tone(466, 0.07, 0.4, 'sawtooth'); _noise(0.12, 0.4, 700); }
+function sfxLoseLife()   { _sweep(300, 95, 0.42, 0.55, 'sine'); _noise(0.22, 0.3, 140); }
+function sfxGameOver()   { [523,494,440,392,349,294,262].forEach((f,i) => setTimeout(() => _tone(f, 0.35, 0.52, 'sawtooth'), i*130)); }
+function sfxCoin()       { _tone(1047, 0.07, 0.45); setTimeout(() => _tone(1319, 0.13, 0.4), 60); }
+function sfxShopOpen()   { _tone(1319, 0.08, 0.42); setTimeout(() => _tone(1047, 0.13, 0.36), 70); _noise(0.08, 0.18, 5500); }
+function sfxRound()      { _tone(440, 0.07, 0.3); setTimeout(() => _tone(554, 0.07, 0.3), 60); setTimeout(() => _tone(659, 0.14, 0.36), 120); }
+
+// ── BACKGROUND MUSIC ─────────────────────────────────
+
+function startBGM() {
+  if (bgmInterval) return;
+  bgmBeat = 0; bgmMelIdx = 0; bgmBassIdx = 0; bgmMelLeft = 0;
+  bgmTick();
+  bgmInterval = setInterval(bgmTick, BGM_BEAT);
+}
+
+function stopBGM() {
+  clearInterval(bgmInterval);
+  bgmInterval = null;
+}
+
+function bgmTick() {
+  if (!audioCtx || isMuted) return;
+  const beatSec = BGM_BEAT / 1000;
+
+  // Melody — play next note when current one expires
+  if (bgmMelLeft <= 0) {
+    const [f, d] = BGM_MEL[bgmMelIdx % BGM_MEL.length];
+    bgmMelLeft = d;
+    bgmMelIdx++;
+    if (f > 0) _tone(f, d * beatSec * 0.82, 0.22, 'sine', bgmGain);
+  }
+  bgmMelLeft--;
+
+  // Bass every 4 beats
+  if (bgmBeat % 4 === 0) {
+    _tone(BGM_BASS[(bgmBassIdx++) % BGM_BASS.length], beatSec * 3.8, 0.38, 'triangle', bgmGain);
+  }
+
+  // Kick: beats 0 and 4 of every 8
+  if (bgmBeat % 8 === 0 || bgmBeat % 8 === 4) {
+    _sweep(190, 55, 0.1, 0.4, 'sine'); _noise(0.09, 0.35, 75, bgmGain);
+  }
+
+  // Snare: beats 2 and 6
+  if (bgmBeat % 8 === 2 || bgmBeat % 8 === 6) {
+    _noise(0.09, 0.2, 2200, bgmGain);
+  }
+
+  // Hi-hat: every odd beat
+  if (bgmBeat % 2 === 1) _noise(0.04, 0.09, 10000, bgmGain);
+
+  bgmBeat++;
 }
 
 // ── UTILS ────────────────────────────────────────────
