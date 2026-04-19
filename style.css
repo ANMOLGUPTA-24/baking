@@ -1,23 +1,24 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --yellow: #FFD93D;
-  --orange: #FF6B35;
-  --pink: #FF6B9D;
-  --green: #6BCB77;
-  --blue: #4D96FF;
-  --purple: #C77DFF;
-  --dark: #2D1B00;
-  --cream: #FFF8EC;
-  --counter: #C8860A;
-  --counter-top: #E8A020;
-  --wall: #FFE0A3;
-  --floor: #D4A373;
+  --yellow: #fbbf24;
+  --orange: #f0522a;
+  --pink: #e8407a;
+  --green: #3dbb61;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --teal: #14b8a6;
+  --dark: #1c1000;
+  --cream: #fffaee;
+  --counter: #b07208;
+  --counter-top: #d18a14;
+  --wall: #f0c97a;
+  --floor: #bf8c5a;
 }
 
 body {
-  font-family: 'Nunito', 'Varela Round', 'Comic Sans MS', 'Trebuchet MS', sans-serif;
-  background: #1a0a00;
+  font-family: 'Nunito', 'Varela Round', sans-serif;
+  background: #140800;
   overflow: hidden;
   height: 100vh;
   width: 100vw;
@@ -33,7 +34,7 @@ body {
 .start-bg {
   width: 100%;
   height: 100%;
-  background: linear-gradient(160deg, #ff9a3c 0%, #ff6b9d 50%, #c77dff 100%);
+  background: linear-gradient(145deg, #f0522a 0%, #a855f7 55%, #14b8a6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,15 +68,16 @@ body {
 }
 
 .start-card {
-  background: white;
-  border-radius: 28px;
+  background: #fffdf5;
+  border-radius: 24px 28px 26px 30px;
   padding: 40px 48px;
   text-align: center;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.3), 0 0 0 6px var(--orange);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.35), 0 0 0 5px var(--orange);
   max-width: 480px;
   width: 90%;
   position: relative;
   z-index: 1;
+  transform: rotate(-1deg);
   animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
 }
 
@@ -85,10 +87,10 @@ body {
 }
 
 .game-title {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 3.2rem;
   color: var(--orange);
-  text-shadow: 4px 4px 0 #ffd93d;
+  text-shadow: 3px 3px 0 var(--yellow), 6px 5px 0 rgba(0,0,0,0.1);
   line-height: 1.1;
   margin-bottom: 6px;
 }
@@ -124,7 +126,7 @@ body {
   border: none;
   border-radius: 50px;
   padding: 14px 40px;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1.4rem;
   cursor: pointer;
   box-shadow: 0 6px 0 #c0392b, 0 8px 20px rgba(255,107,53,0.4);
@@ -137,7 +139,7 @@ body {
 /* game screen */
 #screen-game {
   flex-direction: column;
-  background: #1a0a00;
+  background: #140800;
 }
 
 #top-bar {
@@ -163,7 +165,7 @@ body {
   letter-spacing: 1px;
 }
 .hud-val {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1.3rem;
   color: var(--yellow);
 }
@@ -323,7 +325,7 @@ body {
 }
 #oven-label {
   text-align: center;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.75rem;
   color: #ccc;
   margin-top: 4px;
@@ -397,7 +399,7 @@ body {
   border: 3px solid var(--dark);
   border-radius: 12px;
   padding: 6px 14px;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.9rem;
   cursor: pointer;
   box-shadow: 0 4px 0 #8B2500;
@@ -406,6 +408,9 @@ body {
 }
 .action-btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 0 #8B2500; }
 .action-btn:active { transform: translateY(2px);  box-shadow: 0 1px 0 #8B2500; }
+#btn-mix { background: var(--teal); box-shadow: 0 4px 0 #0d7a72; }
+#btn-mix:hover  { box-shadow: 0 6px 0 #0d7a72; }
+#btn-mix:active { box-shadow: 0 1px 0 #0d7a72; }
 #btn-bake { background: var(--pink); box-shadow: 0 4px 0 #8B004D; }
 #btn-bake:hover  { box-shadow: 0 6px 0 #8B004D; }
 #btn-bake:active { box-shadow: 0 1px 0 #8B004D; }
@@ -428,11 +433,11 @@ body {
   border-radius: 4px;
   border: 2px solid #8B5E3C;
   padding: 10px 12px 12px;
-  box-shadow: 3px 4px 0 rgba(0,0,0,0.15);
-  transform: rotate(-2deg);
+  box-shadow: 4px 5px 0 rgba(0,0,0,0.18);
+  transform: rotate(-4deg);
 }
 #ticket-title {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.8rem;
   color: var(--orange);
   margin-bottom: 6px;
@@ -543,7 +548,7 @@ body {
   border-radius: 20px;
   border: 4px solid var(--orange);
   padding: 16px 28px;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1.5rem;
   color: var(--dark);
   z-index: 1000;
@@ -591,7 +596,7 @@ body {
   text-align: center;
 }
 .flash-round {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 3.5rem;
   color: var(--yellow);
   text-shadow: 4px 4px 0 var(--orange);
@@ -650,7 +655,7 @@ body {
 
 .judge-avatar { font-size: 2rem; line-height: 1; margin-bottom: 2px; }
 .judge-name {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.78rem;
   font-weight: 900;
   margin-bottom: 4px;
@@ -687,9 +692,9 @@ body {
   top: 70px;
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
-  background: linear-gradient(135deg, #c77dff, #ff6b9d);
+  background: linear-gradient(135deg, #14b8a6, #a855f7);
   color: #fff;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1.1rem;
   font-weight: 900;
   padding: 10px 24px;
@@ -733,7 +738,7 @@ body {
 }
 
 #shop-title {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Trebuchet MS', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 2rem;
   color: var(--orange);
   text-shadow: 3px 3px 0 var(--yellow);
@@ -775,7 +780,7 @@ body {
 
 .shop-icon { font-size: 2rem; line-height: 1; margin-bottom: 4px; }
 .shop-name {
-  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.75rem;
   font-weight: 900;
   margin-bottom: 4px;
@@ -796,7 +801,7 @@ body {
   border: 2px solid #ccc;
   border-radius: 50px;
   padding: 8px 24px;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.9rem;
   color: #999;
   cursor: pointer;
